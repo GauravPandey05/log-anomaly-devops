@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+predictions_log.csv
+alerts.txt
+logs.csv
+model.pkl
+.env

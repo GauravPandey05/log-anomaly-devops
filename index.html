@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Anomaly Detection Dashboard</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f9;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        input {
+            padding: 8px;
+            margin: 5px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .result {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .normal {
+            color: green;
+        }
+
+        .anomaly {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🚀 Log Anomaly Detection Dashboard</h1>
+
+<!-- INPUT CARD -->
+<div class="card">
+    <h3>Check Log</h3>
+
+    <input type="number" id="response_time" placeholder="Response Time">
+    <input type="number" id="error_rate" placeholder="Error Rate" step="0.01">
+
+    <br><br>
+    <button onclick="predict()">Check</button>
+
+    <p id="result" class="result"></p>
+</div>
+
+<!-- STATS CARD -->
+<div class="card">
+    <h3>📊 Live Stats</h3>
+
+    <p>Total Logs: <span id="total">0</span></p>
+    <p>Normal: <span id="normal">0</span></p>
+    <p>Anomalies: <span id="anomaly">0</span></p>
+
+    <button onclick="loadStats()">Refresh</button>
+</div>
+
+<!-- GRAPH CARD -->
+<div class="card">
+    <h3>📈 Anomaly Distribution</h3>
+    <canvas id="chart"></canvas>
+</div>
+
+</div>
+
+<script>
+
+let chart;
+
+// 🔹 Prediction
+async function predict() {
+    const response_time = document.getElementById("response_time").value;
+    const error_rate = document.getElementById("error_rate").value;
+
+    const res = await fetch("http://localhost:8000/predict", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            response_time: Number(response_time),
+            error_rate: Number(error_rate)
+        })
+    });
+
+    const data = await res.json();
+
+    if (data.anomaly) {
+        document.getElementById("result").innerHTML = "🚨 Anomaly Detected!";
+        document.getElementById("result").className = "result anomaly";
+    } else {
+        document.getElementById("result").innerHTML = "✅ Normal";
+        document.getElementById("result").className = "result normal";
+    }
+
+    loadStats();
+}
+
+
+// 🔹 Load stats
+async function loadStats() {
+    const res = await fetch("http://localhost:8000/stats");
+    const data = await res.json();
+
+    document.getElementById("total").innerText = data.total_logs;
+    document.getElementById("normal").innerText = data.normal;
+    document.getElementById("anomaly").innerText = data.anomalies;
+
+    updateChart(data.normal, data.anomalies);
+}
+
+
+// 🔹 Chart
+function updateChart(normal, anomaly) {
+    const ctx = document.getElementById('chart').getContext('2d');
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Normal', 'Anomaly'],
+            datasets: [{
+                label: 'Log Count',
+                data: [normal, anomaly],
+                backgroundColor: ['green', 'red']
+            }]
+        }
+    });
+}
+
+
+// 🔹 Load initial data
+loadStats();
+
+</script>
+
+</body>
+</html>
