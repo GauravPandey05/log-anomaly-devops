@@ -17,7 +17,10 @@ app.add_middleware(
 )
 
 # load model
-model = joblib.load("model.pkl")
+try:
+    model = joblib.load("model.pkl")
+except:
+    model = None
 
 LOG_FILE = "predictions_log.csv"
 ALERT_FILE = "alerts.txt"
@@ -38,6 +41,13 @@ def home():
 def predict(log: dict):
     response_time = log["response_time"]
     error_rate = log["error_rate"]
+
+    # 🛑 Handle case when model is not loaded (CI environment)
+    if model is None:
+        return {
+            "error": "Model not loaded (CI environment)",
+            "anomaly": False
+        }
 
     # model prediction
     data = [[response_time, error_rate]]
